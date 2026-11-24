@@ -18,10 +18,10 @@ function parseYouTube(raw){try{const u=new URL(raw);if(u.hostname==='youtu.be'||
 function parseVK(raw){
  try{
   let input=raw.trim();
-  const iframeSrc=input.match(/<iframe\\b[^>]*\\bsrc=["']([^"']+)["']/i);
+  const iframeSrc=input.match(/<iframe\b[^>]*\bsrc=["']([^"']+)["']/i);
   if(iframeSrc)input=iframeSrc[1].replace(/&amp;/g,'&');
   const u=new URL(input),host=u.hostname.toLowerCase();
-  if(!/(^|\\.)((vkvideo\\.ru)|(vk\\.com)|(vk\\.ru))$/.test(host))return null;
+  if(!/(^|\.)((vkvideo\.ru)|(vk\.com)|(vk\.ru))$/.test(host))return null;
   if(u.pathname.includes('video_ext.php')){
    const oid=u.searchParams.get('oid'),id=u.searchParams.get('id');
    if(!oid||!id)return null;
@@ -30,7 +30,7 @@ function parseVK(raw){
    for(const [k,v] of u.searchParams)out.searchParams.set(k,v);
    return {url:out.toString()};
   }
-  if(u.pathname.match(/video(-?\\d+)_(-?\\d+)/))return {needsEmbed:true};
+  if(u.pathname.match(/video(-?\d+)_(-?\d+)/))return {needsEmbed:true};
   return null;
  }catch{return null}
 }
