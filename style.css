@@ -168,3 +168,30 @@ button:focus-visible,.btn:focus-visible{outline:2px solid #a991ff;outline-offset
 
 .home-room-nav{margin:22px auto 18px}
 button:active,.btn:active,.room-tool:active,.tab:active,.profile:active,.icon-btn:active,.invite-top:active,.room-bell:active,.chat-tool:active{backdrop-filter:blur(16px) saturate(1.7);-webkit-backdrop-filter:blur(16px) saturate(1.7);background-image:linear-gradient(135deg,#ffffff35,#b99aff20 48%,#ffffff08);border-color:#c8b5ff88}
+
+
+/* Library, watch history and room notifications */
+.library-overlay,.notification-overlay{position:fixed;inset:0;z-index:90;display:grid;place-items:center;padding:18px;background:#05040bd9;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+.library-card,.notification-card{position:relative;width:min(560px,100%);max-height:min(78vh,760px);overflow:auto;padding:26px 22px 22px;border:1px solid #b69aff42;border-radius:22px;background:linear-gradient(145deg,#1c1926,#101015 72%);box-shadow:0 25px 100px #000b,inset 0 1px 0 #ffffff17}
+.library-card h3,.notification-card h3{margin:9px 0 20px;font-size:21px}
+.library-tabs{display:flex;gap:8px;padding:5px;border:1px solid #ffffff18;border-radius:14px;background:#09090e}
+.library-tabs button{flex:1;padding:11px;border:0;border-radius:10px;background:transparent;color:#aaa5b5;font:600 12px Manrope}
+.library-tabs button.active{background:#393246;color:#fff;box-shadow:inset 0 1px 0 #ffffff20}
+.library-list{display:flex;flex-direction:column;gap:9px;margin-top:15px}
+.library-item{display:flex;align-items:center;gap:10px;padding:12px;border:1px solid #ffffff15;border-radius:13px;background:#ffffff08}
+.library-item-main{flex:1;min-width:0}
+.library-item b,.library-item small{display:block;overflow-wrap:anywhere}
+.library-item b{font-size:12px;color:#eeeaf7}
+.library-item small{margin-top:4px;color:#8e899b;font-size:10px}
+.library-item button{padding:8px 10px;border:1px solid #a98aff55;border-radius:9px;background:#8c69d51c;color:#d8c9ff;font:600 10px Manrope}
+.library-empty,.notification-list p{padding:28px 12px;text-align:center;color:#8f899b;font-size:12px}
+.notification-item{padding:12px;border:1px solid #ffffff15;border-radius:12px;background:#ffffff08;color:#d9d3e5;font-size:12px}
+.notification-item small{display:block;margin-top:5px;color:#888296;font-size:10px}
+.ready-toggle{margin-left:auto;padding:7px 12px;border:1px solid #8f79bf66;border-radius:20px;background:#8e70d322;color:#cdbaff;font:700 10px Manrope}
+.ready-toggle[aria-pressed="false"]{border-color:#ffffff25;background:#ffffff08;color:#aaa5b2}
+.queue-list{display:flex;flex-direction:column;gap:7px;margin-top:10px}
+.queue-item{display:flex;align-items:center;gap:8px;padding:9px 10px;border:1px solid #ffffff13;border-radius:10px;background:#ffffff07}
+.queue-item span{flex:1;min-width:0;color:#dcd6e8;font-size:11px;overflow-wrap:anywhere}
+.queue-item button{padding:6px 9px;border:1px solid #ffffff1a;border-radius:8px;background:#ffffff0a;color:#c9b9f4;font:10px Manrope}
+.queue-item button.remove{color:#e5a6b2}
+@media(max-width:520px){.library-card,.notification-card{padding:23px 15px 16px;border-radius:18px}.library-card h3,.notification-card h3{font-size:19px}.library-item{align-items:flex-start}.library-item button{font-size:9px}}
