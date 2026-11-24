@@ -17,21 +17,21 @@ function broadcast(type,data={}){channel?.postMessage({room:currentCode,type,...
 function parseYouTube(raw){try{const u=new URL(raw);if(u.hostname==='youtu.be'||u.hostname.endsWith('.youtu.be'))return u.pathname.slice(1);if(u.hostname.includes('youtube.com'))return u.searchParams.get('v')||u.pathname.split('/').pop()}catch{}return null}
 function parseVK(raw){
  try{
-  const u=new URL(raw);
-  const host=u.hostname.toLowerCase();
-  if(!/(^|\.)((vkvideo\.ru)|(vk\.com)|(vk\.ru))$/.test(host))return null;
+  let input=raw.trim();
+  const iframeSrc=input.match(/<iframe\\b[^>]*\\bsrc=["']([^"']+)["']/i);
+  if(iframeSrc)input=iframeSrc[1].replace(/&amp;/g,'&');
+  const u=new URL(input),host=u.hostname.toLowerCase();
+  if(!/(^|\\.)((vkvideo\\.ru)|(vk\\.com)|(vk\\.ru))$/.test(host))return null;
   if(u.pathname.includes('video_ext.php')){
-   const oid=u.searchParams.get('oid'), id=u.searchParams.get('id');
+   const oid=u.searchParams.get('oid'),id=u.searchParams.get('id');
    if(!oid||!id)return null;
+   if(!u.searchParams.get('hash'))return {needsEmbed:true};
    const out=new URL('https://vkvideo.ru/video_ext.php');
    for(const [k,v] of u.searchParams)out.searchParams.set(k,v);
-   return out.toString();
+   return {url:out.toString()};
   }
-  const match=u.pathname.match(/video(-?\d+)_(-?\d+)/);
-  if(!match)return null;
-  const out=new URL('https://vkvideo.ru/video_ext.php');
-  out.searchParams.set('oid',match[1]);out.searchParams.set('id',match[2]);out.searchParams.set('hd','2');
-  return out.toString();
+  if(u.pathname.match(/video(-?\\d+)_(-?\\d+)/))return {needsEmbed:true};
+  return null;
  }catch{return null}
 }
 function showPlayerError(message){$('playerStatus').textContent=message;notify(message)}
@@ -44,16 +44,17 @@ function loadDirect(url){
  wrap.appendChild(v);player=v;playerType='direct';$('playerStatus').textContent='Подключаем видео…';$('playPause').disabled=false;$('syncBtn').disabled=false;
 }
 function loadVideo(){
- const url=$('videoUrl').value.trim();if(!url){notify('Вставь прямую ссылку на видеофайл');return}
+ const url=$('videoUrl').value.trim();if(!url){notify('Вставь ссылку на видео');return}
+ const vkEmbed=parseVK(url);
+ if(vkEmbed?.needsEmbed){showPlayerError('Для VK нужна ссылка video_ext.php с hash. В VK открой «Поделиться» → «Экспортировать» и вставь сюда ссылку или весь код iframe.');return}
+ if(vkEmbed?.url){
+  playerType='vk';$('playerWrap').innerHTML='';
+  const frame=document.createElement('iframe');frame.src=vkEmbed.url;frame.allow='autoplay; encrypted-media; fullscreen; picture-in-picture; screen-wake-lock';frame.allowFullscreen=true;frame.referrerPolicy='strict-origin-when-cross-origin';
+  $('playerWrap').appendChild(frame);player=frame;$('playerStatus').textContent='VK Видео · проверяем доступность';$('playPause').disabled=true;$('syncBtn').disabled=true;
+  broadcast('video',{url:vkEmbed.url});notify('VK Видео добавлено. Управление воспроизведением выполняется в самом плеере VK.');return;
+ }
  let parsed;try{parsed=new URL(url)}catch{notify('Проверь формат ссылки');return}
  if(parsed.protocol!=='https:'){notify('Используй HTTPS-ссылку для безопасной загрузки');return}
- const vkEmbed=parseVK(url);
- if(vkEmbed){
-  playerType='vk';$('playerWrap').innerHTML='';
-  const frame=document.createElement('iframe');frame.src=vkEmbed;frame.allow='autoplay; encrypted-media; fullscreen; picture-in-picture; screen-wake-lock';frame.allowFullscreen=true;frame.referrerPolicy='strict-origin-when-cross-origin';
-  $('playerWrap').appendChild(frame);player=frame;$('playerStatus').textContent='VK Видео · доступность зависит от настроек ролика';$('playPause').disabled=true;$('syncBtn').disabled=true;
-  broadcast('video',{url});notify('VK Видео добавлено. Если плеер не откроется, скопируй код встраивания в VK и попробуй ссылку video_ext.php.');return;
- }
  if(parseYouTube(url)){playerType='youtube';$('playerWrap').innerHTML='';const frame=document.createElement('iframe');frame.src='https://www.youtube-nocookie.com/embed/'+encodeURIComponent(parseYouTube(url));frame.allow='accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture';frame.allowFullscreen=true;$('playerWrap').appendChild(frame);player=frame;$('playerStatus').textContent='YouTube · доступ зависит от региона';$('playPause').disabled=true;$('syncBtn').disabled=true;notify('YouTube может требовать VPN. Для просмотра без него используй прямую MP4 / WebM ссылку.');return}
  loadDirect(url);broadcast('video',{url});notify('Ссылка добавлена. Проверяем доступность источника…');
 }
