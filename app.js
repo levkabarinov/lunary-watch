@@ -10,6 +10,10 @@ function closeRoom(){modal.classList.add('hidden');history.replaceState({},'',lo
 $('createRoom').onclick=()=>openRoom(code());$('joinToggle').onclick=()=>{$('joinBox').classList.toggle('hidden');$('roomCode').focus()};
 $('joinRoom').onclick=()=>{const c=$('roomCode').value.trim().toUpperCase();if(!c)return notify('Введи код комнаты');openRoom(c);notify('Открыта комната в демо-режиме')};
 $('closeRoom').onclick=closeRoom;
+$('roomHomeLink').onclick=e=>{e.preventDefault();closeRoom();window.scrollTo({top:0,behavior:'smooth'})};
+$('myRoomsLink').onclick=e=>{e.preventDefault();notify('Список комнат появится после подключения аккаунтов')};
+$('roomBell').onclick=()=>notify('Новых уведомлений нет');
+
 async function copy(text){try{await navigator.clipboard.writeText(text);notify('Скопировано')}catch{const field=document.createElement('textarea');field.value=text;document.body.append(field);field.select();try{document.execCommand('copy');notify('Скопировано')}catch{notify('Выдели и скопируй ссылку вручную')}field.remove()}}
 function inviteUrl(){return location.origin+location.pathname+'?room='+encodeURIComponent(currentCode)}
 function openShare(){if(!currentCode){notify('Сначала создай или открой комнату');return}const link=inviteUrl();const modal=$('shareModal');if(!modal){notify('Окно приглашения не найдено');return}$('shareLink').value=link;$('shareCode').textContent=currentCode;modal.classList.remove('hidden');modal.setAttribute('aria-hidden','false');document.body.style.overflow='hidden'}
