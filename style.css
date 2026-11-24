@@ -164,3 +164,7 @@ button:focus-visible,.btn:focus-visible{outline:2px solid #a991ff;outline-offset
 .room-tool:active{background:linear-gradient(145deg,#34303e,#211d2a);border-color:#b59aff88}
 @media(hover:hover){button:hover,.btn:hover{filter:brightness(1.1)}}
 @media(max-width:700px){.home-room-nav{margin-top:16px;width:calc(100% - 42px)}.home-room-nav a,.home-room-nav button{font-size:12px;min-height:48px}}
+
+
+.home-room-nav{margin:22px auto 18px}
+button:active,.btn:active,.room-tool:active,.tab:active,.profile:active,.icon-btn:active,.invite-top:active,.room-bell:active,.chat-tool:active{backdrop-filter:blur(16px) saturate(1.7);-webkit-backdrop-filter:blur(16px) saturate(1.7);background-image:linear-gradient(135deg,#ffffff35,#b99aff20 48%,#ffffff08);border-color:#c8b5ff88}
