@@ -5,15 +5,20 @@ const DEMO_VIDEO='https://interactive-examples.mdn.mozilla.net/media/cc0-videos/
 const movieCards=[...document.querySelectorAll('.movie-card')];
 function notify(s){toast.textContent=s;toast.classList.add('show');clearTimeout(notify.timer);notify.timer=setTimeout(()=>toast.classList.remove('show'),2400)}
 function code(){return 'LUNA-'+Math.random().toString(36).slice(2,6).toUpperCase()}
-function openRoom(c){currentCode=c;roomTitle='Киновечер';$('roomTitle').textContent=roomTitle;$('roomCodeLabel').textContent=c;$('memberName').textContent=name;$('memberAvatar').textContent=name[0]?.toUpperCase()||'L';$('roomWatching').textContent='1 смотрит';$('roomCode').value=c;modal.classList.remove('hidden');document.body.style.overflow='hidden';$('settingsPop').classList.add('hidden')}
-function closeRoom(){modal.classList.add('hidden');document.body.style.overflow='';document.body.classList.remove('theater');theater=false}
+function openRoom(c){currentCode=c;history.replaceState({},'',location.pathname+'?room='+encodeURIComponent(c));roomTitle='Киновечер';$('roomTitle').textContent=roomTitle;$('roomCodeLabel').textContent=c;$('memberName').textContent=name;$('memberAvatar').textContent=name[0]?.toUpperCase()||'L';$('roomWatching').textContent='1 смотрит';$('roomCode').value=c;modal.classList.remove('hidden');document.body.style.overflow='hidden';$('settingsPop').classList.add('hidden')}
+function closeRoom(){modal.classList.add('hidden');history.replaceState({},'',location.pathname+location.hash);document.body.style.overflow='';document.body.classList.remove('theater');theater=false}
 $('createRoom').onclick=()=>openRoom(code());$('joinToggle').onclick=()=>{$('joinBox').classList.toggle('hidden');$('roomCode').focus()};
 $('joinRoom').onclick=()=>{const c=$('roomCode').value.trim().toUpperCase();if(!c)return notify('Введи код комнаты');openRoom(c);notify('Открыта комната в демо-режиме')};
 $('closeRoom').onclick=closeRoom;
-async function copy(text){try{await navigator.clipboard.writeText(text);notify('Скопировано')}catch{notify(text)}}
+async function copy(text){try{await navigator.clipboard.writeText(text);notify('Скопировано')}catch{const field=document.createElement('textarea');field.value=text;document.body.append(field);field.select();try{document.execCommand('copy');notify('Скопировано')}catch{notify('Выдели и скопируй ссылку вручную')}field.remove()}}
+function inviteUrl(){return location.origin+location.pathname+'?room='+encodeURIComponent(currentCode)}
+function openShare(){if(!currentCode)return;const link=inviteUrl();$('shareLink').value=link;$('shareCode').textContent=currentCode;$('shareModal').classList.remove('hidden')}
 $('copyCode').onclick=()=>copy(currentCode);
-$('inviteBtn').onclick=()=>copy(location.origin+location.pathname+'?room='+encodeURIComponent(currentCode));
-$('invitePeople').onclick=$('inviteBtn').onclick;
+$('inviteBtn').onclick=openShare;
+$('invitePeople').onclick=openShare;
+$('closeShare').onclick=()=>$('shareModal').classList.add('hidden');
+$('copyInvite').onclick=()=>copy(inviteUrl());
+$('nativeShare').onclick=async()=>{const data={title:'Lunary Watch · '+roomTitle,text:'Присоединяйся к моему киновечеру!',url:inviteUrl()};if(navigator.share){try{await navigator.share(data)}catch(e){if(e.name!=='AbortError')notify('Не удалось открыть меню отправки')}}else copy(inviteUrl())};
 $('settingsBtn').onclick=()=>$('settingsPop').classList.toggle('hidden');$('closeSettings').onclick=()=>$('settingsPop').classList.add('hidden');
 $('saveSettings').onclick=()=>{roomTitle=$('roomNameInput').value.trim()||'Киновечер';name=$('nameInput').value.trim()||'Ты';localStorage.setItem('lunaryWatchName',name);$('roomTitle').textContent=roomTitle;$('memberName').textContent=name;$('memberAvatar').textContent=name[0].toUpperCase();$('profileName').textContent=name;notify('Настройки сохранены на этом устройстве');$('settingsPop').classList.add('hidden')};
 $('profileBtn').onclick=()=>{const n=prompt('Как тебя показывать в комнате?',name);if(n?.trim()){name=n.trim().slice(0,24);localStorage.setItem('lunaryWatchName',name);$('profileName').textContent=name;notify('Имя обновлено')}};
