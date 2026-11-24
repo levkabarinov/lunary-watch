@@ -33,7 +33,7 @@ function loadVideo(){
 }
 $('loadVideo').onclick=loadVideo;
 $('demoVideo').onclick=()=>{ $('videoUrl').value=DEMO_VIDEO;loadDirect(DEMO_VIDEO);broadcast('video',{url:DEMO_VIDEO});notify('Загружен тестовый ролик с открытой лицензией')};
-function receive(m){if(!m||m.room!==currentCode)return;if(m.type==='chat')addMessage(m.name||'Участник',m.message);if(!player||playerType!=='direct')return;if(m.type==='play')player.play().catch(()=>{});if(m.type==='pause')player.pause();if(m.type==='seek'&&Math.abs(player.currentTime-m.time)>1)player.currentTime=m.time;if(m.type==='video'&&m.url&&player.src!==m.url)loadDirect(m.url)}
+function receive(m){if(!m||m.room!==currentCode)return;if(m.type==='chat'){addMessage(m.name||'Участник',m.message);return}if(m.type==='video'&&m.url){loadDirect(m.url);return}if(!player||playerType!=='direct')return;if(m.type==='play')player.play().catch(()=>{});if(m.type==='pause')player.pause();if(m.type==='seek'&&Math.abs(player.currentTime-m.time)>1)player.currentTime=m.time}
 if(channel)channel.onmessage=e=>receive(e.data);
 $('playPause').onclick=()=>{if(playerType!=='direct'||!player)return;if(player.paused)player.play().catch(()=>notify('Браузер не разрешил автозапуск'));else player.pause()};
 $('syncBtn').onclick=()=>{if(playerType==='direct'&&player){broadcast('seek',{time:player.currentTime});notify('Позиция отправлена другим вкладкам этого браузера')}};
