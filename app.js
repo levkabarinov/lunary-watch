@@ -19,7 +19,7 @@ function parseVK(raw){
  try{
   const u=new URL(raw);
   const host=u.hostname.toLowerCase();
-  if(!/(^|\\.)((vkvideo\\.ru)|(vk\\.com)|(vk\\.ru))$/.test(host))return null;
+  if(!/(^|\.)((vkvideo\.ru)|(vk\.com)|(vk\.ru))$/.test(host))return null;
   if(u.pathname.includes('video_ext.php')){
    const oid=u.searchParams.get('oid'), id=u.searchParams.get('id');
    if(!oid||!id)return null;
@@ -27,7 +27,7 @@ function parseVK(raw){
    for(const [k,v] of u.searchParams)out.searchParams.set(k,v);
    return out.toString();
   }
-  const match=u.pathname.match(/video(-?\\d+)_(-?\\d+)/);
+  const match=u.pathname.match(/video(-?\d+)_(-?\d+)/);
   if(!match)return null;
   const out=new URL('https://vkvideo.ru/video_ext.php');
   out.searchParams.set('oid',match[1]);out.searchParams.set('id',match[2]);out.searchParams.set('hd','2');
