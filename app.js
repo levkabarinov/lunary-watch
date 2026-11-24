@@ -1,80 +1,43 @@
-const $=id=>document.getElementById(id);
-const modal=$('roomModal'), toast=$('toast');
-let currentCode=null, playerType=null, player=null, showingFavorites=false;
-const channel=('BroadcastChannel' in window)?new BroadcastChannel('lunary-watch-demo'):null;
+const $=id=>document.getElementById(id), modal=$('roomModal'),toast=$('toast');
+let currentCode='',player=null,playerType='',name=localStorage.getItem('lunaryWatchName')||'Ты',roomTitle='Киновечер',theater=false,showingFavorites=false;
+const channel=('BroadcastChannel'in window)?new BroadcastChannel('lunary-watch-demo'):null;
 const DEMO_VIDEO='https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4';
 const movieCards=[...document.querySelectorAll('.movie-card')];
-function notify(msg){toast.textContent=msg;toast.classList.add('show');clearTimeout(notify.timer);notify.timer=setTimeout(()=>toast.classList.remove('show'),2600)}
+function notify(s){toast.textContent=s;toast.classList.add('show');clearTimeout(notify.timer);notify.timer=setTimeout(()=>toast.classList.remove('show'),2400)}
 function code(){return 'LUNA-'+Math.random().toString(36).slice(2,6).toUpperCase()}
-function openRoom(c){currentCode=c;$('roomCodeDisplay').textContent=c;$('roomTitle').textContent='Твоя комната готова';modal.classList.remove('hidden');document.body.style.overflow='hidden'}
-function closeRoom(){modal.classList.add('hidden');document.body.style.overflow=''}
-$('createRoom').onclick=()=>openRoom(code());
-$('joinToggle').onclick=()=>{$('joinBox').classList.toggle('hidden');$('roomCode').focus()};
-$('joinRoom').onclick=()=>{const c=$('roomCode').value.trim().toUpperCase();if(!c){notify('Введи код комнаты');return}openRoom(c);notify('Открыт демо-режим комнаты')};
-document.querySelectorAll('[data-close]').forEach(x=>x.onclick=closeRoom);
-$('copyCode').onclick=async()=>{try{await navigator.clipboard.writeText(currentCode);notify('Код скопирован')}catch(e){notify('Код комнаты: '+currentCode)}};
+function openRoom(c){currentCode=c;roomTitle='Киновечер';$('roomTitle').textContent=roomTitle;$('roomCodeLabel').textContent=c;$('memberName').textContent=name;$('memberAvatar').textContent=name[0]?.toUpperCase()||'L';$('roomWatching').textContent='1 смотрит';$('roomCode').value=c;modal.classList.remove('hidden');document.body.style.overflow='hidden';$('settingsPop').classList.add('hidden')}
+function closeRoom(){modal.classList.add('hidden');document.body.style.overflow='';document.body.classList.remove('theater');theater=false}
+$('createRoom').onclick=()=>openRoom(code());$('joinToggle').onclick=()=>{$('joinBox').classList.toggle('hidden');$('roomCode').focus()};
+$('joinRoom').onclick=()=>{const c=$('roomCode').value.trim().toUpperCase();if(!c)return notify('Введи код комнаты');openRoom(c);notify('Открыта комната в демо-режиме')};
+$('closeRoom').onclick=closeRoom;
+async function copy(text){try{await navigator.clipboard.writeText(text);notify('Скопировано')}catch{notify(text)}}
+$('copyCode').onclick=()=>copy(currentCode);
+$('inviteBtn').onclick=()=>copy(location.origin+location.pathname+'?room='+encodeURIComponent(currentCode));
+$('invitePeople').onclick=$('inviteBtn').onclick;
+$('settingsBtn').onclick=()=>$('settingsPop').classList.toggle('hidden');$('closeSettings').onclick=()=>$('settingsPop').classList.add('hidden');
+$('saveSettings').onclick=()=>{roomTitle=$('roomNameInput').value.trim()||'Киновечер';name=$('nameInput').value.trim()||'Ты';localStorage.setItem('lunaryWatchName',name);$('roomTitle').textContent=roomTitle;$('memberName').textContent=name;$('memberAvatar').textContent=name[0].toUpperCase();$('profileName').textContent=name;notify('Настройки сохранены на этом устройстве');$('settingsPop').classList.add('hidden')};
+$('profileBtn').onclick=()=>{const n=prompt('Как тебя показывать в комнате?',name);if(n?.trim()){name=n.trim().slice(0,24);localStorage.setItem('lunaryWatchName',name);$('profileName').textContent=name;notify('Имя обновлено')}};
+$('mobileMenu').onclick=()=>document.querySelector('#catalog').scrollIntoView({behavior:'smooth'});
+document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x===b));$('chatPage').classList.toggle('hidden',b.dataset.tab!=='chat');$('peoplePage').classList.toggle('hidden',b.dataset.tab!=='people')});
+$('hideChatBtn').onclick=()=>{const side=document.querySelector('.side-panel');side.classList.toggle('hidden');$('hideChatBtn').textContent=side.classList.contains('hidden')?'Показать чат':'Скрыть чат'};
+$('theaterBtn').onclick=()=>{theater=!theater;document.body.classList.toggle('theater',theater);$('theaterBtn').textContent=theater?'⛶ Обычный режим':'⛶ Режим кино'};
 function broadcast(type,data={}){channel?.postMessage({room:currentCode,type,...data})}
-function parseYouTube(raw){try{const u=new URL(raw);if(u.hostname==='youtu.be'||u.hostname.endsWith('.youtu.be'))return u.pathname.slice(1);if(u.hostname.includes('youtube.com'))return u.searchParams.get('v')||u.pathname.split('/').pop()}catch{}return null}
-function parseVK(raw){
- try{
-  let input=raw.trim();
-  const iframeSrc=input.match(/<iframe\b[^>]*\bsrc=["']([^"']+)["']/i);
-  if(iframeSrc)input=iframeSrc[1].replace(/&amp;/g,'&');
-  const u=new URL(input),host=u.hostname.toLowerCase();
-  if(!/(^|\.)((vkvideo\.ru)|(vk\.com)|(vk\.ru))$/.test(host))return null;
-  if(u.pathname.includes('video_ext.php')){
-   const oid=u.searchParams.get('oid'),id=u.searchParams.get('id');
-   if(!oid||!id)return null;
-   const out=new URL('https://vkvideo.ru/video_ext.php');
-   for(const [k,v] of u.searchParams)out.searchParams.set(k,v);
-   return {url:out.toString()};
-  }
-  const match=u.pathname.match(/video(-?\d+)_(-?\d+)/);
-  if(!match)return null;
-  const out=new URL('https://vkvideo.ru/video_ext.php');
-  out.searchParams.set('oid',match[1]);out.searchParams.set('id',match[2]);out.searchParams.set('hd','3');
-  return {url:out.toString()};
- }catch{return null}
-}
-function showPlayerError(message){$('playerStatus').textContent=message;notify(message)}
-function loadDirect(url){
- const wrap=$('playerWrap');wrap.innerHTML='';
- const v=document.createElement('video');v.controls=true;v.playsInline=true;v.preload='metadata';v.crossOrigin='anonymous';v.src=url;
- v.addEventListener('loadedmetadata',()=>{$('playerStatus').textContent='Видео готово · '+Math.round(v.duration)+' сек.';$('playPause').disabled=false;$('syncBtn').disabled=false});
- v.addEventListener('error',()=>{ $('playerStatus').textContent='Не удалось загрузить видео';notify('Источник недоступен или ссылка не ведёт на MP4 / WebM. Проверь ссылку и доступность хостинга.')});
- v.addEventListener('play',()=>broadcast('play'));v.addEventListener('pause',()=>broadcast('pause'));v.addEventListener('seeked',()=>broadcast('seek',{time:v.currentTime}));
- wrap.appendChild(v);player=v;playerType='direct';$('playerStatus').textContent='Подключаем видео…';$('playPause').disabled=false;$('syncBtn').disabled=false;
-}
-function loadVideo(){
- const url=$('videoUrl').value.trim();if(!url){notify('Вставь ссылку на видео');return}
- const vkEmbed=parseVK(url);
- if(vkEmbed?.url){
-  playerType='vk';$('playerWrap').innerHTML='';
-  const frame=document.createElement('iframe');frame.src=vkEmbed.url;frame.allow='autoplay; encrypted-media; fullscreen; picture-in-picture; screen-wake-lock';frame.allowFullscreen=true;frame.referrerPolicy='strict-origin-when-cross-origin';
-  $('playerWrap').appendChild(frame);player=frame;$('playerStatus').textContent='VK Видео · проверяем доступность';$('playPause').disabled=true;$('syncBtn').disabled=true;
-  broadcast('video',{url:vkEmbed.url});notify('VK Видео добавлено. Управление воспроизведением выполняется в самом плеере VK.');return;
- }
- let parsed;try{parsed=new URL(url)}catch{notify('Проверь формат ссылки');return}
- if(parsed.protocol!=='https:'){notify('Используй HTTPS-ссылку для безопасной загрузки');return}
- if(parseYouTube(url)){playerType='youtube';$('playerWrap').innerHTML='';const frame=document.createElement('iframe');frame.src='https://www.youtube-nocookie.com/embed/'+encodeURIComponent(parseYouTube(url));frame.allow='accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture';frame.allowFullscreen=true;$('playerWrap').appendChild(frame);player=frame;$('playerStatus').textContent='YouTube · доступ зависит от региона';$('playPause').disabled=true;$('syncBtn').disabled=true;notify('YouTube может требовать VPN. Для просмотра без него используй прямую MP4 / WebM ссылку.');return}
- loadDirect(url);broadcast('video',{url});notify('Ссылка добавлена. Проверяем доступность источника…');
-}
-$('loadVideo').onclick=loadVideo;
-$('demoVideo').onclick=()=>{ $('videoUrl').value=DEMO_VIDEO;loadDirect(DEMO_VIDEO);broadcast('video',{url:DEMO_VIDEO});notify('Загружен тестовый ролик с открытой лицензией')};
-function receive(m){if(!m||m.room!==currentCode)return;if(m.type==='chat'){addMessage(m.name||'Участник',m.message);return}if(m.type==='video'&&m.url){loadDirect(m.url);return}if(!player||playerType!=='direct')return;if(m.type==='play')player.play().catch(()=>{});if(m.type==='pause')player.pause();if(m.type==='seek'&&Math.abs(player.currentTime-m.time)>1)player.currentTime=m.time}
+function parseYouTube(raw){try{const u=new URL(raw);if(u.hostname==='youtu.be')return u.pathname.slice(1);if(u.hostname.includes('youtube.com'))return u.searchParams.get('v')||u.pathname.split('/').pop()}catch{}return null}
+function parseVK(raw){try{let input=raw.trim(),m=input.match(/<iframe\b[^>]*\bsrc=["']([^"']+)["']/i);if(m)input=m[1].replace(/&amp;/g,'&');const u=new URL(input),h=u.hostname.toLowerCase();if(!/(^|\.)((vkvideo\.ru)|(vk\.com)|(vk\.ru))$/.test(h))return null;if(u.pathname.includes('video_ext.php')){if(!u.searchParams.get('oid')||!u.searchParams.get('id'))return null;return{url:u.toString()}}const x=u.pathname.match(/video(-?\d+)_(-?\d+)/);if(!x)return null;const out=new URL('https://vkvideo.ru/video_ext.php');out.searchParams.set('oid',x[1]);out.searchParams.set('id',x[2]);out.searchParams.set('hd','3');return{url:out.toString()}}catch{return null}}
+function loadDirect(url){const wrap=$('playerWrap');wrap.innerHTML='';const v=document.createElement('video');v.controls=true;v.playsInline=true;v.preload='metadata';v.src=url;v.addEventListener('loadedmetadata',()=>{$('playerStatus').textContent='Видео готово · '+Math.round(v.duration)+' сек.';$('playPause').disabled=false;$('syncBtn').disabled=false});v.addEventListener('error',()=>{$('playerStatus').textContent='Не удалось загрузить видео';notify('Источник недоступен или ссылка не ведёт на MP4/WebM')});v.addEventListener('play',()=>broadcast('play'));v.addEventListener('pause',()=>broadcast('pause'));v.addEventListener('seeked',()=>broadcast('seek',{time:v.currentTime}));wrap.appendChild(v);player=v;playerType='direct';$('playerStatus').textContent='Подключаем видео…';$('videoTitle').textContent='Прямое видео';$('playPause').disabled=false;$('syncBtn').disabled=false}
+function loadVideo(){const raw=$('videoUrl').value.trim();if(!raw)return notify('Вставь ссылку на видео');const vk=parseVK(raw);if(vk){$('playerWrap').innerHTML='';const f=document.createElement('iframe');f.src=vk.url;f.allow='autoplay; encrypted-media; fullscreen; picture-in-picture';f.allowFullscreen=true;f.referrerPolicy='strict-origin-when-cross-origin';$('playerWrap').appendChild(f);player=f;playerType='vk';$('videoTitle').textContent='Видео VK';$('playerStatus').textContent='VK Видео · управление внутри плеера';$('playPause').disabled=true;$('syncBtn').disabled=true;broadcast('video',{url:vk.url,type:'vk'});notify('VK Видео добавлено');return}let u;try{u=new URL(raw)}catch{return notify('Проверь ссылку')};if(u.protocol!=='https:')return notify('Нужна HTTPS-ссылка');const yt=parseYouTube(raw);if(yt){$('playerWrap').innerHTML='';const f=document.createElement('iframe');f.src='https://www.youtube-nocookie.com/embed/'+encodeURIComponent(yt);f.allow='autoplay; encrypted-media; picture-in-picture';f.allowFullscreen=true;$('playerWrap').appendChild(f);player=f;playerType='youtube';$('videoTitle').textContent='Видео YouTube';$('playerStatus').textContent='YouTube · доступность зависит от региона';$('playPause').disabled=true;$('syncBtn').disabled=true;broadcast('video',{url:f.src,type:'youtube'});return}loadDirect(raw);broadcast('video',{url:raw,type:'direct'})}
+$('loadVideo').onclick=loadVideo;$('playPause').onclick=()=>{if(playerType!=='direct'||!player)return;player.paused?player.play().catch(()=>notify('Автозапуск заблокирован')):player.pause()};
+$('syncBtn').onclick=()=>{if(playerType==='direct'&&player){broadcast('seek',{time:player.currentTime});notify('Позиция отправлена вкладкам этого браузера')}};
+function receive(m){if(!m||m.room!==currentCode)return;if(m.type==='chat'){addMessage(m.name||'Гость',m.message);return}if(m.type==='reaction'){$('reactionStatus').textContent=m.emoji+' от '+m.name;return}if(m.type==='video'){if(m.kind==='vk'||m.type==='vk'){$('videoUrl').value=m.url;return}if(m.type==='youtube'){$('videoUrl').value=m.url;return}loadDirect(m.url);return}if(!player||playerType!=='direct')return;if(m.type==='play')player.play().catch(()=>{});if(m.type==='pause')player.pause();if(m.type==='seek'&&Math.abs(player.currentTime-m.time)>1)player.currentTime=m.time}
 if(channel)channel.onmessage=e=>receive(e.data);
-$('playPause').onclick=()=>{if(playerType!=='direct'||!player)return;if(player.paused)player.play().catch(()=>notify('Браузер не разрешил автозапуск'));else player.pause()};
-$('syncBtn').onclick=()=>{if(playerType==='direct'&&player){broadcast('seek',{time:player.currentTime});notify('Позиция отправлена другим вкладкам этого браузера')}};
-function send(){const input=$('chatInput'),v=input.value.trim();if(!v)return;addMessage('Ты',v);broadcast('chat',{name:'Участник',message:v});input.value=''}
-function addMessage(name,msg){const p=document.createElement('p');p.className='chat-line';const b=document.createElement('b');b.textContent=name;const span=document.createElement('span');span.textContent=msg;p.append(b,span);$('chatMessages').appendChild(p);$('chatMessages').scrollTop=$('chatMessages').scrollHeight}
+function send(){const i=$('chatInput'),v=i.value.trim();if(!v)return;addMessage(name,v);broadcast('chat',{name,message:v});i.value=''}
+function addMessage(n,msg){const p=document.createElement('p');p.className='chat-line';const b=document.createElement('b'),s=document.createElement('span');b.textContent=n;s.textContent=msg;p.append(b,s);$('chatMessages').append(p);$('chatMessages').scrollTop=$('chatMessages').scrollHeight}
 $('sendChat').onclick=send;$('chatInput').addEventListener('keydown',e=>{if(e.key==='Enter')send()});
-$('profileBtn').onclick=()=>notify('LunaryID подключим отдельным этапом');
-$('mobileMenu').onclick=()=>notify('Навигация: Главная · Каталог · Как это работает');
-// Избранное хранится локально на этом устройстве.
+document.querySelectorAll('[data-reaction]').forEach(b=>b.onclick=()=>{const emoji=b.dataset.reaction;$('reactionStatus').textContent=emoji+' отправлено';broadcast('reaction',{emoji,name})});
 let favorites=[];try{favorites=JSON.parse(localStorage.getItem('lunaryWatchFavorites')||'[]')}catch{}
 function saveFavorites(){localStorage.setItem('lunaryWatchFavorites',JSON.stringify(favorites));$('favCount').textContent=favorites.length}
-movieCards.forEach((card,i)=>{const title=card.querySelector('.movie-info b')?.textContent||('Подборка '+(i+1));const button=document.createElement('button');button.className='favorite-btn';button.type='button';button.textContent=favorites.includes(title)?'♥ В избранном':'♡ В избранное';button.onclick=()=>{favorites=favorites.includes(title)?favorites.filter(x=>x!==title):[...favorites,title];saveFavorites();button.textContent=favorites.includes(title)?'♥ В избранном':'♡ В избранное';applyCatalog()};card.querySelector('.movie-info').appendChild(button)});
-function applyCatalog(){const q=$('movieSearch').value.trim().toLowerCase();movieCards.forEach(card=>{const title=(card.innerText||'').toLowerCase();const name=card.querySelector('.movie-info b')?.textContent||'';card.classList.toggle('hidden',(!title.includes(q))||(showingFavorites&&!favorites.includes(name)))})}
-$('movieSearch').addEventListener('input',applyCatalog);
-$('showFavorites').onclick=()=>{showingFavorites=!showingFavorites;$('showFavorites').classList.toggle('active-filter',showingFavorites);$('showFavorites').innerHTML=(showingFavorites?'Показать всё':'♡ Избранное')+' <span id="favCount">'+favorites.length+'</span>';applyCatalog()};
-saveFavorites();
+movieCards.forEach((card,i)=>{const title=card.querySelector('.movie-info b')?.textContent||'Подборка '+i;const b=document.createElement('button');b.className='favorite-btn';b.textContent=favorites.includes(title)?'♥ В избранном':'♡ В избранное';b.onclick=()=>{favorites=favorites.includes(title)?favorites.filter(x=>x!==title):[...favorites,title];saveFavorites();b.textContent=favorites.includes(title)?'♥ В избранном':'♡ В избранное';applyCatalog()};card.querySelector('.movie-info').append(b)});
+function applyCatalog(){const q=$('movieSearch').value.trim().toLowerCase();movieCards.forEach(c=>{const t=c.innerText.toLowerCase(),n=c.querySelector('.movie-info b')?.textContent||'';c.classList.toggle('hidden',!t.includes(q)||(showingFavorites&&!favorites.includes(n)))})}
+$('movieSearch').addEventListener('input',applyCatalog);$('showFavorites').onclick=()=>{showingFavorites=!showingFavorites;$('showFavorites').classList.toggle('active-filter',showingFavorites);$('showFavorites').innerHTML=(showingFavorites?'Показать всё':'♡ Избранное')+' <span id="favCount">'+favorites.length+'</span>';applyCatalog()};
+saveFavorites();$('profileName').textContent=name;
+const roomParam=new URLSearchParams(location.search).get('room');if(roomParam)openRoom(roomParam.toUpperCase());
