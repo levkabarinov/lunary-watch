@@ -42,7 +42,7 @@ $('sourceToggle').onclick=()=>{$('sourcePanel').classList.toggle('hidden');if(!$
 $('saveVideoBtn').onclick=()=>{const url=$('videoUrl').value.trim();if(!url)return notify('Сначала добавь ссылку на видео');let saved=[];try{saved=JSON.parse(localStorage.getItem('lunaryWatchSaved')||'[]')}catch{};if(!saved.some(x=>x.url===url)){saved.push({url,title:$('videoTitle').textContent});localStorage.setItem('lunaryWatchSaved',JSON.stringify(saved))}notify('Видео сохранено на этом устройстве')};
 $('libraryBtn').onclick=()=>{let saved=[];try{saved=JSON.parse(localStorage.getItem('lunaryWatchSaved')||'[]')}catch{};if(!saved.length)return notify('В библиотеке пока пусто');const list=saved.map((x,i)=>(i+1)+'. '+x.title+' — '+x.url).join('\n');alert('Библиотека Lunary Watch\n\n'+list)};
 document.querySelectorAll('[data-accordion]').forEach(b=>b.onclick=()=>$(b.dataset.accordion).classList.toggle('hidden'));
-$('passwordToggle').onclick=()=>notify('Пароль комнаты — функция Pro, пока доступна только в макете');
+$('passwordToggle').onclick=()=>notify('Настройка пароля комнаты пока не подключена');
 $('queueAdd').onclick=()=>{const v=$('queueInput').value.trim();if(!v)return notify('Введи название фильма');$('queueEmpty').textContent='Следующее: '+v;$('queueStatus').textContent=v;$('queueInput').value='';notify('Добавлено в очередь на этом устройстве')};
 $('emojiBtn').onclick=()=>{$('chatInput').value+='🙂';$('chatInput').focus()};
 $('attachBtn').onclick=()=>notify('Прикрепление файлов пока не подключено');
