@@ -7,6 +7,7 @@ function notify(s){toast.textContent=s;toast.classList.add('show');clearTimeout(
 function code(){return 'LUNA-'+Math.random().toString(36).slice(2,6).toUpperCase()}
 function openRoom(c){currentCode=c;history.replaceState({},'',location.pathname+'?room='+encodeURIComponent(c));roomTitle='Киновечер';$('roomTitle').textContent=roomTitle;$('roomCodeLabel').textContent=c;$('memberName').textContent=name;$('memberAvatar').textContent=name[0]?.toUpperCase()||'L';$('readyName').textContent=name;$('roomUserAvatar').textContent=name[0]?.toUpperCase()||'L';$('roomWatching').textContent='1 смотрит';$('roomCode').value=c;modal.classList.remove('hidden');document.body.style.overflow='hidden';$('settingsPop').classList.add('hidden')}
 function closeRoom(){modal.classList.add('hidden');history.replaceState({},'',location.pathname+location.hash);document.body.style.overflow='';document.body.classList.remove('theater');theater=false}
+$('homeRoomsNav').onclick=()=>{$('joinBox').classList.remove('hidden');$('joinBox').scrollIntoView({behavior:'smooth',block:'center'});$('roomCode').focus()};
 $('createRoom').onclick=()=>openRoom(code());$('joinToggle').onclick=()=>{$('joinBox').classList.toggle('hidden');$('roomCode').focus()};
 $('joinRoom').onclick=()=>{const c=$('roomCode').value.trim().toUpperCase();if(!c)return notify('Введи код комнаты');openRoom(c);notify('Открыта комната в демо-режиме')};
 $('closeRoom').onclick=closeRoom;
