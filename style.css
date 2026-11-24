@@ -195,3 +195,11 @@ button:active,.btn:active,.room-tool:active,.tab:active,.profile:active,.icon-bt
 .queue-item button{padding:6px 9px;border:1px solid #ffffff1a;border-radius:8px;background:#ffffff0a;color:#c9b9f4;font:10px Manrope}
 .queue-item button.remove{color:#e5a6b2}
 @media(max-width:520px){.library-card,.notification-card{padding:23px 15px 16px;border-radius:18px}.library-card h3,.notification-card h3{font-size:19px}.library-item{align-items:flex-start}.library-item button{font-size:9px}}
+
+/* Unified Lunary palette */
+:root{--lunary-bg:#0a1020;--lunary-panel:#141e34;--lunary-line:#2a3958;--lunary-mint:#8af0ce;--lunary-blue:#9eafff}
+body{background-color:var(--lunary-bg)!important;color:#f2f6ff!important}
+.ambient{background:radial-gradient(ellipse at 77% 25%,#0c4b4a55,transparent 35%),radial-gradient(ellipse at 12% 0%,#28315e88,transparent 38%)!important}
+.brand-mark{background:linear-gradient(135deg,var(--lunary-mint),var(--lunary-blue))!important;color:#10182a;box-shadow:0 0 25px #8af0ce33!important}
+.brand-light,.accent,.eyebrow{color:var(--lunary-mint)!important}
+.primary,.btn-primary,.button-primary{background:linear-gradient(100deg,var(--lunary-mint),var(--lunary-blue))!important;color:#10182a!important}
