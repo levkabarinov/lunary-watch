@@ -25,13 +25,15 @@ function parseVK(raw){
   if(u.pathname.includes('video_ext.php')){
    const oid=u.searchParams.get('oid'),id=u.searchParams.get('id');
    if(!oid||!id)return null;
-   if(!u.searchParams.get('hash'))return {needsEmbed:true};
-   const out=new URL('https://vkvideo.ru/video_ext.php');
+   const out=new URL('https://vk.com/video_ext.php');
    for(const [k,v] of u.searchParams)out.searchParams.set(k,v);
    return {url:out.toString()};
   }
-  if(u.pathname.match(/video(-?\d+)_(-?\d+)/))return {needsEmbed:true};
-  return null;
+  const match=u.pathname.match(/video(-?\d+)_(-?\d+)/);
+  if(!match)return null;
+  const out=new URL('https://vk.com/video_ext.php');
+  out.searchParams.set('oid',match[1]);out.searchParams.set('id',match[2]);out.searchParams.set('hd','2');
+  return {url:out.toString()};
  }catch{return null}
 }
 function showPlayerError(message){$('playerStatus').textContent=message;notify(message)}
@@ -46,7 +48,6 @@ function loadDirect(url){
 function loadVideo(){
  const url=$('videoUrl').value.trim();if(!url){notify('Вставь ссылку на видео');return}
  const vkEmbed=parseVK(url);
- if(vkEmbed?.needsEmbed){showPlayerError('Для VK нужна ссылка video_ext.php с hash. В VK открой «Поделиться» → «Экспортировать» и вставь сюда ссылку или весь код iframe.');return}
  if(vkEmbed?.url){
   playerType='vk';$('playerWrap').innerHTML='';
   const frame=document.createElement('iframe');frame.src=vkEmbed.url;frame.allow='autoplay; encrypted-media; fullscreen; picture-in-picture; screen-wake-lock';frame.allowFullscreen=true;frame.referrerPolicy='strict-origin-when-cross-origin';
