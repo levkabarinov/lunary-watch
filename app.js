@@ -1,33 +1,52 @@
 const $=id=>document.getElementById(id);
 const modal=$('roomModal'), toast=$('toast');
-let currentCode=null, playerType=null, player=null, isPlaying=false;
-const channel = ('BroadcastChannel' in window) ? new BroadcastChannel('lunary-watch-demo') : null;
-function notify(msg){toast.textContent=msg;toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),2300)}
+let currentCode=null, playerType=null, player=null, showingFavorites=false;
+const channel=('BroadcastChannel' in window)?new BroadcastChannel('lunary-watch-demo'):null;
+const DEMO_VIDEO='https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4';
+const movieCards=[...document.querySelectorAll('.movie-card')];
+function notify(msg){toast.textContent=msg;toast.classList.add('show');clearTimeout(notify.timer);notify.timer=setTimeout(()=>toast.classList.remove('show'),2600)}
 function code(){return 'LUNA-'+Math.random().toString(36).slice(2,6).toUpperCase()}
-function openRoom(c){currentCode=c; $('roomCodeDisplay').textContent=c; $('roomTitle').textContent='Комната готова'; modal.classList.remove('hidden');document.body.style.overflow='hidden';}
+function openRoom(c){currentCode=c;$('roomCodeDisplay').textContent=c;$('roomTitle').textContent='Твоя комната готова';modal.classList.remove('hidden');document.body.style.overflow='hidden'}
 function closeRoom(){modal.classList.add('hidden');document.body.style.overflow=''}
 $('createRoom').onclick=()=>openRoom(code());
 $('joinToggle').onclick=()=>{$('joinBox').classList.toggle('hidden');$('roomCode').focus()};
-$('joinRoom').onclick=()=>{let c=$('roomCode').value.trim().toUpperCase();if(!c){notify('Введи код комнаты');return}openRoom(c);notify('Открыт демо-режим комнаты')};
+$('joinRoom').onclick=()=>{const c=$('roomCode').value.trim().toUpperCase();if(!c){notify('Введи код комнаты');return}openRoom(c);notify('Открыт демо-режим комнаты')};
 document.querySelectorAll('[data-close]').forEach(x=>x.onclick=closeRoom);
 $('copyCode').onclick=async()=>{try{await navigator.clipboard.writeText(currentCode);notify('Код скопирован')}catch(e){notify('Код комнаты: '+currentCode)}};
-function parseYouTube(url){try{const u=new URL(url);if(u.hostname.includes('youtu.be'))return u.pathname.slice(1);if(u.hostname.includes('youtube.com'))return u.searchParams.get('v')||u.pathname.split('/').pop()}catch(e){}return null}
+function broadcast(type,data={}){channel?.postMessage({room:currentCode,type,...data})}
+function parseYouTube(raw){try{const u=new URL(raw);if(u.hostname==='youtu.be'||u.hostname.endsWith('.youtu.be'))return u.pathname.slice(1);if(u.hostname.includes('youtube.com'))return u.searchParams.get('v')||u.pathname.split('/').pop()}catch{}return null}
+function showPlayerError(message){$('playerStatus').textContent=message;notify(message)}
+function loadDirect(url){
+ const wrap=$('playerWrap');wrap.innerHTML='';
+ const v=document.createElement('video');v.controls=true;v.playsInline=true;v.preload='metadata';v.crossOrigin='anonymous';v.src=url;
+ v.addEventListener('loadedmetadata',()=>{$('playerStatus').textContent='Видео готово · '+Math.round(v.duration)+' сек.';$('playPause').disabled=false;$('syncBtn').disabled=false});
+ v.addEventListener('error',()=>{ $('playerStatus').textContent='Не удалось загрузить видео';notify('Источник недоступен или ссылка не ведёт на MP4 / WebM. Проверь ссылку и доступность хостинга.')});
+ v.addEventListener('play',()=>broadcast('play'));v.addEventListener('pause',()=>broadcast('pause'));v.addEventListener('seeked',()=>broadcast('seek',{time:v.currentTime}));
+ wrap.appendChild(v);player=v;playerType='direct';$('playerStatus').textContent='Подключаем видео…';$('playPause').disabled=false;$('syncBtn').disabled=false;
+}
 function loadVideo(){
- const url=$('videoUrl').value.trim();if(!url){notify('Добавь ссылку на видео');return}
- const id=parseYouTube(url), wrap=$('playerWrap');wrap.innerHTML='';
- if(id){playerType='youtube';wrap.innerHTML=`<iframe id="ytPlayer" src="https://www.youtube-nocookie.com/embed/${encodeURIComponent(id)}?enablejsapi=1&origin=${encodeURIComponent(location.origin)}" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;player=$('ytPlayer');$('playerStatus').textContent='YouTube · готово';}
- else if(/^https?:\/\//i.test(url)){playerType='direct';const v=document.createElement('video');v.src=url;v.controls=true;v.playsInline=true;v.addEventListener('play',()=>broadcast('play'));v.addEventListener('pause',()=>broadcast('pause'));wrap.appendChild(v);player=v;$('playerStatus').textContent='Прямое видео · готово';}
- else{notify('Нужна корректная ссылка https://');return}
- $('playPause').disabled=false;$('syncBtn').disabled=false;notify('Видео добавлено в комнату');broadcast('video',{url});
+ const url=$('videoUrl').value.trim();if(!url){notify('Вставь прямую ссылку на видеофайл');return}
+ let parsed;try{parsed=new URL(url)}catch{notify('Проверь формат ссылки');return}
+ if(parsed.protocol!=='https:'){notify('Используй HTTPS-ссылку для безопасной загрузки');return}
+ if(parseYouTube(url)){playerType='youtube';$('playerWrap').innerHTML='';const frame=document.createElement('iframe');frame.src='https://www.youtube-nocookie.com/embed/'+encodeURIComponent(parseYouTube(url));frame.allow='accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture';frame.allowFullscreen=true;$('playerWrap').appendChild(frame);player=frame;$('playerStatus').textContent='YouTube · доступ зависит от региона';$('playPause').disabled=true;$('syncBtn').disabled=true;notify('YouTube может требовать VPN. Для просмотра без него используй прямую MP4 / WebM ссылку.');return}
+ loadDirect(url);broadcast('video',{url});notify('Ссылка добавлена. Проверяем доступность источника…');
 }
 $('loadVideo').onclick=loadVideo;
-function broadcast(type,data={}){if(channel)channel.postMessage({room:currentCode,type,...data})}
-if(channel)channel.onmessage=e=>{const m=e.data;if(!m||m.room!==currentCode)return;if(m.type==='play'&&playerType==='direct')player.play().catch(()=>{});if(m.type==='pause'&&playerType==='direct')player.pause();if(m.type==='seek'&&playerType==='direct')player.currentTime=m.time};
-$('playPause').onclick=()=>{if(playerType==='direct'){if(player.paused){player.play().catch(()=>notify('Браузер заблокировал автозапуск'));broadcast('play')}else{player.pause();broadcast('pause')}}else notify('Для YouTube управление пока выполняется в самом плеере. Синхронизация требует серверной интеграции.');};
-$('syncBtn').onclick=()=>{if(playerType==='direct'){broadcast('seek',{time:player.currentTime});notify('Состояние отправлено другим вкладкам')}else notify('Для полноценной синхронизации YouTube нужен общий сервер комнаты')};
+$('demoVideo').onclick=()=>{ $('videoUrl').value=DEMO_VIDEO;loadDirect(DEMO_VIDEO);broadcast('video',{url:DEMO_VIDEO});notify('Загружен тестовый ролик с открытой лицензией')};
+function receive(m){if(!m||m.room!==currentCode)return;if(m.type==='chat')addMessage(m.name||'Участник',m.message);if(!player||playerType!=='direct')return;if(m.type==='play')player.play().catch(()=>{});if(m.type==='pause')player.pause();if(m.type==='seek'&&Math.abs(player.currentTime-m.time)>1)player.currentTime=m.time;if(m.type==='video'&&m.url&&player.src!==m.url)loadDirect(m.url)}
+if(channel)channel.onmessage=e=>receive(e.data);
+$('playPause').onclick=()=>{if(playerType!=='direct'||!player)return;if(player.paused)player.play().catch(()=>notify('Браузер не разрешил автозапуск'));else player.pause()};
+$('syncBtn').onclick=()=>{if(playerType==='direct'&&player){broadcast('seek',{time:player.currentTime});notify('Позиция отправлена другим вкладкам этого браузера')}};
 function send(){const input=$('chatInput'),v=input.value.trim();if(!v)return;addMessage('Ты',v);broadcast('chat',{name:'Участник',message:v});input.value=''}
 function addMessage(name,msg){const p=document.createElement('p');p.className='chat-line';const b=document.createElement('b');b.textContent=name;const span=document.createElement('span');span.textContent=msg;p.append(b,span);$('chatMessages').appendChild(p);$('chatMessages').scrollTop=$('chatMessages').scrollHeight}
 $('sendChat').onclick=send;$('chatInput').addEventListener('keydown',e=>{if(e.key==='Enter')send()});
-if(channel){const old=channel.onmessage;channel.onmessage=e=>{const m=e.data;if(m?.room===currentCode&&m.type==='chat')addMessage(m.name||'Участник',m.message);if(m?.room===currentCode&&m.type==='play'&&playerType==='direct')player.play().catch(()=>{});if(m?.room===currentCode&&m.type==='pause'&&playerType==='direct')player.pause();if(m?.room===currentCode&&m.type==='seek'&&playerType==='direct')player.currentTime=m.time;};}
-$('profileBtn').onclick=()=>notify('Профили подключим через LunaryID на следующем этапе');
+$('profileBtn').onclick=()=>notify('LunaryID подключим отдельным этапом');
 $('mobileMenu').onclick=()=>notify('Навигация: Главная · Каталог · Как это работает');
+// Избранное хранится локально на этом устройстве.
+let favorites=[];try{favorites=JSON.parse(localStorage.getItem('lunaryWatchFavorites')||'[]')}catch{}
+function saveFavorites(){localStorage.setItem('lunaryWatchFavorites',JSON.stringify(favorites));$('favCount').textContent=favorites.length}
+movieCards.forEach((card,i)=>{const title=card.querySelector('.movie-info b')?.textContent||('Подборка '+(i+1));const button=document.createElement('button');button.className='favorite-btn';button.type='button';button.textContent=favorites.includes(title)?'♥ В избранном':'♡ В избранное';button.onclick=()=>{favorites=favorites.includes(title)?favorites.filter(x=>x!==title):[...favorites,title];saveFavorites();button.textContent=favorites.includes(title)?'♥ В избранном':'♡ В избранное';applyCatalog()};card.querySelector('.movie-info').appendChild(button)});
+function applyCatalog(){const q=$('movieSearch').value.trim().toLowerCase();movieCards.forEach(card=>{const title=(card.innerText||'').toLowerCase();const name=card.querySelector('.movie-info b')?.textContent||'';card.classList.toggle('hidden',(!title.includes(q))||(showingFavorites&&!favorites.includes(name)))})}
+$('movieSearch').addEventListener('input',applyCatalog);
+$('showFavorites').onclick=()=>{showingFavorites=!showingFavorites;$('showFavorites').classList.toggle('active-filter',showingFavorites);$('showFavorites').innerHTML=(showingFavorites?'Показать всё':'♡ Избранное')+' <span id="favCount">'+favorites.length+'</span>';applyCatalog()};
+saveFavorites();
