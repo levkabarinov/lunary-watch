@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#090814"><title>Lunary Watch</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="ambient"></div>
+<header class="topbar">
+  <a class="brand" href="#"><span class="brand-mark">✦</span><span>LUNARY<span class="brand-light">WATCH</span></span></a>
+  <nav><a class="active" href="#home">Главная</a><a href="#catalog">Каталог</a><a href="#how">Как это работает</a></nav>
+  <button class="profile" id="profileBtn"><span class="avatar">L</span><span>Мой профиль</span></button>
+  <button class="mobile-menu" id="mobileMenu" aria-label="Открыть меню">☰</button>
+</header>
+<main id="home">
+  <section class="hero">
+    <div class="hero-copy">
+      <div class="eyebrow"><span class="pulse"></span> ТВОЯ КОМНАТА. ВАШ ОБЩИЙ ФИЛЬМ.</div>
+      <h1>Кино лучше,<br><span>когда вы вместе.</span></h1>
+      <p>Создавай комнату, приглашай друзей и смотри видео синхронно. Даже если вас разделяют тысячи километров.</p>
+      <div class="hero-actions"><button class="btn primary" id="createRoom">＋ Создать комнату</button><button class="btn secondary" id="joinToggle">Войти по коду <span>↗</span></button></div>
+      <div class="join-box hidden" id="joinBox"><input id="roomCode" placeholder="Код комнаты"><button class="btn primary small" id="joinRoom">Войти</button></div>
+      <div class="hero-meta"><div class="avatars"><i>L</i><i>M</i><i>A</i><i>+</i></div><span>Собирай свою компанию</span></div>
+    </div>
+    <div class="hero-art">
+      <div class="orbit orbit-one"></div><div class="orbit orbit-two"></div>
+      <div class="poster-main"><div class="poster-glow"></div><div class="poster-content"><span class="poster-tag">TONIGHT'S PICK</span><div class="poster-title">BEYOND<br>THE <em>STARS</em></div><span class="poster-sub">A LUNARY ORIGINAL NIGHT</span></div><div class="poster-bottom"><span>✦ 01:48:22</span><span class="poster-play">▶</span><span>4K EXPERIENCE</span></div></div>
+      <div class="floating-card"><span class="live-dot"></span><div><b>Комната активна</b><small>3 участника смотрят</small></div><span class="mini-avatars">L M A</span></div>
+      <div class="spark s1">✦</div><div class="spark s2">✧</div><div class="spark s3">✦</div>
+    </div>
+  </section>
+  <section class="quick-grid">
+    <article class="quick-card"><div class="quick-icon purple">▣</div><div><b>Синхронный просмотр</b><p>Пауза и перемотка для всех</p></div></article>
+    <article class="quick-card"><div class="quick-icon blue">☏</div><div><b>Общайтесь на ходу</b><p>Чат прямо в комнате</p></div></article>
+    <article class="quick-card"><div class="quick-icon pink">♧</div><div><b>Закрытые комнаты</b><p>Только по приглашению</p></div></article>
+  </section>
+  <section class="section" id="catalog">
+    <div class="section-head"><div><div class="eyebrow">ВЫБИРАЙ НАСТРОЕНИЕ</div><h2>Что будем смотреть?</h2></div><span class="muted">Демо-подборка · добавь своё видео в комнате</span></div>
+    <div class="movie-grid">
+      <article class="movie-card movie-a"><div class="movie-art"><span class="movie-label">SCI-FI</span><span class="movie-symbol">✧</span><div class="movie-name">THE<br>INFINITE</div></div><div class="movie-info"><b>За пределами</b><span>Фантастика · 2 ч 04 мин</span></div></article>
+      <article class="movie-card movie-b"><div class="movie-art"><span class="movie-label">MYSTERY</span><span class="movie-symbol">◉</span><div class="movie-name">DARK<br>MATTER</div></div><div class="movie-info"><b>Тёмная материя</b><span>Детектив · 1 ч 52 мин</span></div></article>
+      <article class="movie-card movie-c"><div class="movie-art"><span class="movie-label">ADVENTURE</span><span class="movie-symbol">✦</span><div class="movie-name">LOST<br>WORLD</div></div><div class="movie-info"><b>Затерянный мир</b><span>Приключения · 1 ч 46 мин</span></div></article>
+      <article class="movie-card movie-d"><div class="movie-art"><span class="movie-label">DRAMA</span><span class="movie-symbol">☾</span><div class="movie-name">AFTER<br>LIGHT</div></div><div class="movie-info"><b>После света</b><span>Драма · 1 ч 58 мин</span></div></article>
+    </div>
+    <p class="catalog-note">Это демонстрационные карточки, а не встроенная библиотека фильмов. В комнате можно вставить ссылку на разрешённое видео или YouTube.</p>
+  </section>
+  <section class="section how" id="how"><div class="eyebrow">ВСЁ ПРОСТО</div><h2>Три шага до совместного вечера</h2><div class="steps"><div><span>01</span><b>Создай комнату</b><p>Получи короткий код приглашения.</p></div><div><span>02</span><b>Позови друзей</b><p>Отправь код тем, с кем хочешь смотреть.</p></div><div><span>03</span><b>Запускай просмотр</b><p>Добавь видео и управляй воспроизведением.</p></div></div></section>
+</main>
+<footer><a class="brand" href="#"><span class="brand-mark">✦</span><span>LUNARY<span class="brand-light">WATCH</span></span></a><span>Сделано для общих моментов.</span><span>© 2026 Lunary</span></footer>
+<div class="modal hidden" id="roomModal"><div class="modal-backdrop" data-close></div><div class="modal-panel room-panel">
+  <button class="close" data-close>×</button><div class="eyebrow">WATCH PARTY</div><h2 id="roomTitle">Твоя комната готова</h2><p class="muted">Поделись кодом с друзьями. Пока это демо-комната в браузере.</p>
+  <div class="room-code"><span id="roomCodeDisplay">LUNA-0000</span><button id="copyCode">Копировать</button></div>
+  <label>Ссылка на видео или YouTube</label><div class="url-row"><input id="videoUrl" placeholder="https://www.youtube.com/watch?v=..."><button class="btn primary small" id="loadVideo">Загрузить</button></div>
+  <div class="player-wrap" id="playerWrap"><div class="empty-player"><span>▶</span><b>Здесь появится видео</b><small>Добавь ссылку выше</small></div></div>
+  <div class="player-controls"><button id="playPause" disabled>▶ / ❚❚</button><button id="syncBtn" disabled>⟳ Синхронизировать</button><span id="playerStatus">Ожидает видео</span></div>
+  <div class="room-lower"><div><b>Участники <span class="count" id="memberCount">1</span></b><div class="member"><span class="avatar">L</span><span>Ты</span><small>Владелец</small></div></div><div class="chat"><b>Чат комнаты</b><div class="chat-messages" id="chatMessages"><p class="system-msg">Комната создана. Позови друзей по коду.</p></div><div class="chat-send"><input id="chatInput" placeholder="Написать сообщение..."><button id="sendChat">➤</button></div></div></div>
+</div></div>
+<div class="toast" id="toast"></div>
+<script src="app.js"></script>
+</body></html>
