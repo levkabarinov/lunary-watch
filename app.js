@@ -12,11 +12,12 @@ $('joinRoom').onclick=()=>{const c=$('roomCode').value.trim().toUpperCase();if(!
 $('closeRoom').onclick=closeRoom;
 async function copy(text){try{await navigator.clipboard.writeText(text);notify('Скопировано')}catch{const field=document.createElement('textarea');field.value=text;document.body.append(field);field.select();try{document.execCommand('copy');notify('Скопировано')}catch{notify('Выдели и скопируй ссылку вручную')}field.remove()}}
 function inviteUrl(){return location.origin+location.pathname+'?room='+encodeURIComponent(currentCode)}
-function openShare(){if(!currentCode)return;const link=inviteUrl();$('shareLink').value=link;$('shareCode').textContent=currentCode;$('shareModal').classList.remove('hidden')}
+function openShare(){if(!currentCode){notify('Сначала создай или открой комнату');return}const link=inviteUrl();const modal=$('shareModal');if(!modal){notify('Окно приглашения не найдено');return}$('shareLink').value=link;$('shareCode').textContent=currentCode;modal.classList.remove('hidden');modal.setAttribute('aria-hidden','false');document.body.style.overflow='hidden'}
 $('copyCode').onclick=()=>copy(currentCode);
-$('inviteBtn').onclick=openShare;
-$('invitePeople').onclick=openShare;
-$('closeShare').onclick=()=>$('shareModal').classList.add('hidden');
+$('inviteBtn').addEventListener('click',e=>{e.preventDefault();e.stopPropagation();openShare()});
+$('invitePeople').addEventListener('click',e=>{e.preventDefault();e.stopPropagation();openShare()});
+$('closeShare').onclick=()=>{const modal=$('shareModal');modal.classList.add('hidden');modal.setAttribute('aria-hidden','true');document.body.style.overflow='hidden'};
+$('shareModal').addEventListener('click',e=>{if(e.target===$('shareModal'))$('closeShare').click()});
 $('copyInvite').onclick=()=>copy(inviteUrl());
 $('nativeShare').onclick=async()=>{const data={title:'Lunary Watch · '+roomTitle,text:'Присоединяйся к моему киновечеру!',url:inviteUrl()};if(navigator.share){try{await navigator.share(data)}catch(e){if(e.name!=='AbortError')notify('Не удалось открыть меню отправки')}}else copy(inviteUrl())};
 $('settingsBtn').onclick=()=>$('settingsPop').classList.toggle('hidden');$('closeSettings').onclick=()=>$('settingsPop').classList.add('hidden');
