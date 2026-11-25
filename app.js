@@ -118,7 +118,7 @@ function initAuth(){
   try{
    if(authMode==='signup'){
     if(username.length<2)throw new Error('Имя должно содержать минимум 2 символа.');
-    const {data,error}=await sb.auth.signUp({email,password,options:{data:{username:username.slice(0,24),avatar_color:selectedAvatarColor},emailRedirectTo:location.origin+location.pathname}});
+    const {data,error}=await sb.auth.signUp({email,password,options:{data:{username:username.slice(0,24),avatar_color:selectedAvatarColor}}});
     if(error)throw error;
     $('authPassword').value='';
     if(data.session&&data.user){
