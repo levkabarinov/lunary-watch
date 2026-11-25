@@ -2,13 +2,169 @@ const $=id=>document.getElementById(id), modal=$('roomModal'),toast=$('toast');
 const volatileStorage=new Map();
 function safeGet(key){try{const value=window.localStorage.getItem(key);return value??volatileStorage.get(key)??null}catch{return volatileStorage.get(key)??null}}
 function safeSet(key,value){const stored=String(value);volatileStorage.set(key,stored);try{window.localStorage.setItem(key,stored)}catch{}}
-let currentCode='',player=null,playerType='',name=safeGet('lunaryWatchName')||'Ты',roomTitle='Киновечер',theater=false,showingFavorites=false;
+let currentCode='',player=null,playerType='',name=safeGet('lunaryWatchName')||'',roomTitle='Киновечер',theater=false,showingFavorites=false;
 const sb=window.supabase?.createClient('https://vlwhhqmhmqnfodvmlqjf.supabase.co','sb_publishable_HgmpwSi-eEhzvssEw8k5_g_Rtwde0Y3');
 const deviceId=crypto.randomUUID?.()||('tab-'+Math.random().toString(36).slice(2)+'-'+Date.now());
+if(!name||name==='Ты')name='Гость-'+String(deviceId).slice(-4).toUpperCase();
+let authUser=null,authProfile=null,authMode='login',selectedAvatarColor='green',profileLoadToken=0;
+const avatarColorMap={green:'#55c982',violet:'#9679df',pink:'#e17eae',orange:'#e6a05e'};
+
 let channel=null,roomMembers=new Map(),syncApplying=false,remoteActionUntil=0,ytPlayer=null,vkPlayer=null,videoSyncTimer=null,pendingRemoteState=null,activeVideoUrl='',roomConnected=false,latestVideoState=null,lastRoomPersist=0;
 const DEMO_VIDEO='https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4';
 const movieCards=[...document.querySelectorAll('.movie-card')];
 function notify(s){toast.textContent=s;toast.classList.add('show');clearTimeout(notify.timer);notify.timer=setTimeout(()=>toast.classList.remove('show'),2400)}
+function paintAvatar(el,color,letter){
+ if(!el)return;
+ el.textContent=letter||'L';
+ el.style.background=avatarColorMap[color]||avatarColorMap.green;
+ el.style.color='#08130d';
+}
+function updateIdentityUi(){
+ const displayName=authProfile?.username||name||('Гость-'+String(deviceId).slice(-4).toUpperCase());
+ if(authProfile)name=displayName;
+ const initial=displayName.trim().charAt(0).toUpperCase()||'G';
+ $('profileName').textContent=authProfile?displayName:'Войти';
+ paintAvatar($('headerAvatar'),authProfile?.avatar_color||'green',initial);
+ $('memberName').textContent=displayName;
+ paintAvatar($('memberAvatar'),authProfile?.avatar_color||'green',initial);
+ $('readyName').textContent=displayName;
+ const readyAvatar=$('readyName')?.previousElementSibling;
+ paintAvatar(readyAvatar,authProfile?.avatar_color||'green',initial);
+ paintAvatar($('roomUserAvatar'),authProfile?.avatar_color||'green',initial);
+ $('profileName').title=authProfile?.lunary_id||'Войти в Lunary ID';
+ if($('nameInput'))$('nameInput').value=displayName;
+}
+function presencePayload(){
+ return {name:authProfile?.username||name,lunaryId:authProfile?.lunary_id||'',avatarColor:authProfile?.avatar_color||'green',joinedAt:new Date().toISOString()};
+}
+function setAuthMode(mode){
+ authMode=mode==='signup'?'signup':'login';
+ document.querySelectorAll('[data-auth-mode]').forEach(b=>b.classList.toggle('active',b.dataset.authMode===authMode));
+ $('authUsernameWrap').classList.toggle('hidden',authMode!=='signup');
+ $('authColorsWrap').classList.toggle('hidden',authMode!=='signup');
+ $('authHeading').textContent=authMode==='signup'?'Создать Lunary ID':'Войти в Lunary';
+ $('authSubmit').textContent=authMode==='signup'?'Создать аккаунт':'Войти';
+ $('authPassword').autocomplete=authMode==='signup'?'new-password':'current-password';
+ $('authStatus').textContent='';
+}
+function renderAuthView(){
+ const logged=!!(authUser&&authProfile);
+ $('authForm').classList.toggle('hidden',logged);
+ $('authAccount').classList.toggle('hidden',!logged);
+ $('authTabs').classList.toggle('hidden',logged);
+ if(logged){
+  $('authHeading').textContent='Твой Lunary ID';
+  $('authDisplayName').textContent=authProfile.username;
+  $('authEmailDisplay').textContent=authUser.email||'';
+  $('accountLunaryId').textContent=authProfile.lunary_id;
+  paintAvatar($('authUserAvatar'),authProfile.avatar_color,authProfile.username.slice(0,1).toUpperCase());
+ }else setAuthMode(authMode);
+}
+function openAuthModal(){
+ $('authStatus').textContent='';
+ renderAuthView();
+ $('authModal').classList.remove('hidden');
+ document.body.style.overflow='hidden';
+}
+function closeAuthModal(){
+ $('authModal').classList.add('hidden');
+ document.body.style.overflow=modal.classList.contains('hidden')?'':'hidden';
+}
+async function loadLunaryProfile(user){
+ if(!sb||!user)return;
+ authUser=user;
+ const token=++profileLoadToken;
+ const fields='id,lunary_id,username,avatar_color';
+ let {data,error}=await sb.from('profiles').select(fields).eq('id',user.id).maybeSingle();
+ if(error)throw error;
+ if(!data){
+  const username=String(user.user_metadata?.username||user.email?.split('@')[0]||'Lunarian').trim().slice(0,24)||'Lunarian';
+  const avatarColor=avatarColorMap[user.user_metadata?.avatar_color]?user.user_metadata.avatar_color:'green';
+  const candidate='LUN-'+crypto.randomUUID().replace(/-/g,'').slice(0,8).toUpperCase();
+  const created=await sb.from('profiles').insert({id:user.id,lunary_id:candidate,username,avatar_color:avatarColor}).select(fields).single();
+  if(created.error){
+   const retry=await sb.from('profiles').select(fields).eq('id',user.id).maybeSingle();
+   if(retry.error||!retry.data)throw created.error;
+   data=retry.data;
+  }else data=created.data;
+ }
+ if(token!==profileLoadToken)return;
+ authProfile=data;
+ name=data.username||'Lunarian';
+ safeSet('lunaryWatchName',name);
+ updateIdentityUi();
+ if(!$('authModal').classList.contains('hidden'))renderAuthView();
+ if(channel&&roomConnected){try{await channel.track(presencePayload())}catch(e){console.warn('Presence identity update',e)}}
+}
+function initAuth(){
+ if(!sb?.auth){$('authStatus').textContent='Сервис аккаунтов временно недоступен.';return}
+ document.querySelectorAll('[data-auth-mode]').forEach(b=>b.addEventListener('click',()=>setAuthMode(b.dataset.authMode)));
+ document.querySelectorAll('[data-avatar-color]').forEach(b=>b.addEventListener('click',()=>{
+  selectedAvatarColor=b.dataset.avatarColor;
+  document.querySelectorAll('[data-avatar-color]').forEach(x=>x.classList.toggle('selected',x===b));
+ }));
+ $('profileBtn').onclick=openAuthModal;
+ $('closeAuth').onclick=closeAuthModal;
+ $('authModal').addEventListener('click',e=>{if(e.target===$('authModal'))closeAuthModal()});
+ $('authForm').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const email=$('authEmail').value.trim().toLowerCase();
+  const password=$('authPassword').value;
+  const username=$('authUsername').value.trim();
+  const submit=$('authSubmit');
+  submit.disabled=true;
+  submit.textContent='Подключаем…';
+  $('authStatus').textContent='';
+  try{
+   if(authMode==='signup'){
+    if(username.length<2)throw new Error('Имя должно содержать минимум 2 символа.');
+    const {data,error}=await sb.auth.signUp({email,password,options:{data:{username:username.slice(0,24),avatar_color:selectedAvatarColor},emailRedirectTo:location.origin+location.pathname}});
+    if(error)throw error;
+    $('authPassword').value='';
+    if(data.session&&data.user){
+     await loadLunaryProfile(data.user);
+     $('authStatus').textContent='Аккаунт создан. Lunary ID готов.';
+     renderAuthView();
+    }else{
+     $('authStatus').textContent='Аккаунт создан. Проверь почту и подтверди адрес, затем войди с теми же данными.';
+    }
+   }else{
+    const {data,error}=await sb.auth.signInWithPassword({email,password});
+    if(error)throw error;
+    await loadLunaryProfile(data.user);
+    $('authPassword').value='';
+    $('authStatus').textContent='Ты вошёл в Lunary.';
+    renderAuthView();
+   }
+  }catch(error){
+   $('authStatus').textContent=error.message||'Не удалось подключиться к аккаунту.';
+  }finally{
+   submit.disabled=false;
+   submit.textContent=authMode==='signup'?'Создать аккаунт':'Войти';
+  }
+ });
+ $('authLogout').onclick=async()=>{
+  const {error}=await sb.auth.signOut();
+  if(error){$('authStatus').textContent=error.message;return}
+  $('authStatus').textContent='Ты вышел из аккаунта.';
+ };
+ $('copyLunaryId').onclick=()=>copy(authProfile?.lunary_id||'');
+ sb.auth.onAuthStateChange((event,session)=>{
+  if(session?.user){
+   setTimeout(()=>loadLunaryProfile(session.user).catch(error=>{console.warn('Lunary profile',error);notify('Не удалось загрузить Lunary ID: '+error.message)}),0);
+  }else if(event==='SIGNED_OUT'){
+   profileLoadToken++;authUser=null;authProfile=null;name='Гость-'+String(deviceId).slice(-4).toUpperCase();updateIdentityUi();
+   if(!$('authModal').classList.contains('hidden'))renderAuthView();
+  }
+ });
+ sb.auth.getSession().then(({data,error})=>{
+  if(error){console.warn('Auth session',error);return}
+  if(data.session?.user)loadLunaryProfile(data.session.user).catch(e=>console.warn('Lunary profile',e));
+ });
+ updateIdentityUi();
+ setAuthMode('login');
+}
+
 function readStore(key){try{return JSON.parse(safeGet(key)||'[]')}catch{return []}}
 function writeStore(key,value){safeSet(key,JSON.stringify(value))}
 function pushNotification(title,detail=''){const items=readStore('lunaryWatchNotifications');items.unshift({title,detail,time:Date.now()});writeStore('lunaryWatchNotifications',items.slice(0,30))}
@@ -45,7 +201,7 @@ $('shareModal').addEventListener('click',e=>{if(e.target===$('shareModal'))$('cl
 $('copyInvite').onclick=()=>copy(inviteUrl());
 $('nativeShare').onclick=async()=>{const data={title:'Lunary Watch · '+roomTitle,text:'Присоединяйся к моему киновечеру!',url:inviteUrl()};if(navigator.share){try{await navigator.share(data)}catch(e){if(e.name!=='AbortError')notify('Не удалось открыть меню отправки')}}else copy(inviteUrl())};
 $('settingsBtn').onclick=()=>$('settingsPop').classList.toggle('hidden');$('closeSettings').onclick=()=>$('settingsPop').classList.add('hidden');
-$('saveSettings').onclick=()=>{roomTitle=$('roomNameInput').value.trim()||'Киновечер';name=$('nameInput').value.trim()||'Ты';safeSet('lunaryWatchName',name);$('roomTitle').textContent=roomTitle;$('memberName').textContent=name;$('memberAvatar').textContent=name[0].toUpperCase();$('readyName').textContent=name;$('roomUserAvatar').textContent=name[0].toUpperCase();$('profileName').textContent=name;notify('Настройки сохранены на этом устройстве');$('settingsPop').classList.add('hidden')};
+$('saveSettings').onclick=async()=>{roomTitle=$('roomNameInput').value.trim()||'Киновечер';const requestedName=$('nameInput').value.trim().slice(0,24)||name||'Гость';if(authUser&&authProfile){const {data,error}=await sb.from('profiles').update({username:requestedName,updated_at:new Date().toISOString()}).eq('id',authUser.id).select('id,lunary_id,username,avatar_color').single();if(error){notify('Не удалось обновить профиль: '+error.message);return}authProfile=data;name=data.username}else{name=requestedName;safeSet('lunaryWatchName',name)}$('roomTitle').textContent=roomTitle;updateIdentityUi();$('settingsPop').classList.add('hidden');notify('Настройки сохранены')};
 $('profileBtn').onclick=()=>{const n=prompt('Как тебя показывать в комнате?',name);if(n?.trim()){name=n.trim().slice(0,24);safeSet('lunaryWatchName',name);$('profileName').textContent=name;notify('Имя обновлено')}};
 $('mobileMenu').onclick=()=>document.querySelector('#catalog').scrollIntoView({behavior:'smooth'});
 document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x===b));$('chatPage').classList.toggle('hidden',b.dataset.tab!=='chat');$('peoplePage').classList.toggle('hidden',b.dataset.tab!=='people')});
@@ -76,11 +232,11 @@ async function connectRoom(code){
   roomMembers.clear();members.forEach((p,i)=>roomMembers.set(p._presenceKey+'-'+i,p));
   const count=Math.max(1,members.length);$('roomWatching').textContent=count+' смотрит';$('memberCount').textContent=count;
   const people=$('peoplePage');people?.querySelectorAll('.member.remote').forEach(x=>x.remove());
-  members.forEach(p=>{if(p._presenceKey===presenceKey)return;const row=document.createElement('div');row.className='member remote';const av=document.createElement('span');av.className='avatar';av.textContent=(p.name||'Гость').slice(0,1).toUpperCase();const label=document.createElement('span');label.textContent=p.name||'Гость';const tag=document.createElement('small');tag.textContent='В комнате';row.append(av,label,tag);const note=people?.querySelector('.side-note');if(note)people.insertBefore(row,note)});
+  members.forEach(p=>{if(p._presenceKey===presenceKey)return;const row=document.createElement('div');row.className='member remote';const av=document.createElement('span');av.className='avatar';av.textContent=(p.name||'Гость').slice(0,1).toUpperCase();const label=document.createElement('span');label.textContent=p.name||'Гость';const tag=document.createElement('small');tag.textContent=p.lunaryId||'Гость';paintAvatar(av,p.avatarColor,(p.name||'Гость').slice(0,1).toUpperCase());row.append(av,label,tag);const note=people?.querySelector('.side-note');if(note)people.insertBefore(row,note)});
  });
  channel.subscribe(async status=>{
   if(status==='SUBSCRIBED'){
-   roomConnected=true;await channel.track({name,joinedAt:new Date().toISOString()});
+   roomConnected=true;await channel.track(presencePayload());
    $('playerStatus').textContent='Комната подключена · общая синхронизация активна';
    const {data:latest,error}=await sb.from('watch_rooms').select('*').eq('room_code',code).maybeSingle();
    if(error)console.warn('Initial room state read',error);
@@ -158,5 +314,5 @@ function saveFavorites(){safeSet('lunaryWatchFavorites',JSON.stringify(favorites
 movieCards.forEach((card,i)=>{const title=card.querySelector('.movie-info b')?.textContent||'Подборка '+i;const b=document.createElement('button');b.className='favorite-btn';b.textContent=favorites.includes(title)?'♥ В избранном':'♡ В избранное';b.onclick=()=>{favorites=favorites.includes(title)?favorites.filter(x=>x!==title):[...favorites,title];saveFavorites();b.textContent=favorites.includes(title)?'♥ В избранном':'♡ В избранное';applyCatalog()};card.querySelector('.movie-info').append(b)});
 function applyCatalog(){const q=$('movieSearch').value.trim().toLowerCase();movieCards.forEach(c=>{const t=c.innerText.toLowerCase(),n=c.querySelector('.movie-info b')?.textContent||'';c.classList.toggle('hidden',!t.includes(q)||(showingFavorites&&!favorites.includes(n)))})}
 $('movieSearch').addEventListener('input',applyCatalog);$('showFavorites').onclick=()=>{showingFavorites=!showingFavorites;$('showFavorites').classList.toggle('active-filter',showingFavorites);$('showFavorites').innerHTML=(showingFavorites?'Показать всё':'♡ Избранное')+' <span id="favCount">'+favorites.length+'</span>';applyCatalog()};
-saveFavorites();$('profileName').textContent=name;
+saveFavorites();updateIdentityUi();initAuth();
 const roomParam=new URLSearchParams(location.search).get('room');if(roomParam)openRoom(roomParam.toUpperCase());
