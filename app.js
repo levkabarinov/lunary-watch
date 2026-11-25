@@ -63,7 +63,14 @@ async function connectRoom(code){
  const presenceKey=crypto.randomUUID?.()||Math.random().toString(36).slice(2);
  channel=sb.channel('lunary-watch-'+code,{config:{broadcast:{self:false},presence:{key:presenceKey}}});
  channel.on('broadcast',{event:'watch'},({payload})=>receive(payload));
- // Room video state is delivered through the room broadcast channel.
+ // Persisted room state is the reliable fallback for source changes and late joiners.
+ // Supabase documents Postgres Changes errors as extension-level; they do not close
+ // the whole channel, so keep broadcast/presence alive alongside this listener.
+ channel.on('postgres_changes',{event:'UPDATE',schema:'public',table:'watch_rooms',filter:'room_code=eq.'+code},payload=>{
+  const row=payload?.new;
+  if(!row||row.sync_sender===deviceId||!row.video_url)return;
+  receive({room:code,type:'room-state',url:row.video_url,kind:row.video_kind||'direct',time:Number(row.playback_time)||0,playing:!!row.is_playing,stamp:Date.parse(row.updated_at)||Date.now()});
+ });
  channel.on('presence',{event:'sync'},()=>{
   const state=channel.presenceState(),members=Object.entries(state).flatMap(([key,metas])=>metas.map(p=>({...p,_presenceKey:key})));
   roomMembers.clear();members.forEach((p,i)=>roomMembers.set(p._presenceKey+'-'+i,p));
