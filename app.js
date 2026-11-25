@@ -57,10 +57,7 @@ function loadVideo(){const raw=$('videoUrl').value.trim();if(!raw)return notify(
 
 $('sourceToggle').onclick=()=>{$('sourcePanel').classList.toggle('hidden');if(!$('sourcePanel').classList.contains('hidden'))$('videoUrl').focus()};
 $('saveVideoBtn').onclick=()=>{const url=$('videoUrl').value.trim();if(!url)return notify('Сначала добавь ссылку на видео');let saved=[];try{saved=JSON.parse(localStorage.getItem('lunaryWatchSaved')||'[]')}catch{};if(!saved.some(x=>x.url===url)){saved.push({url,title:$('videoTitle').textContent});localStorage.setItem('lunaryWatchSaved',JSON.stringify(saved))}notify('Видео сохранено на этом устройстве')};
-$('libraryBtn').onclick=()=>{let saved=[];try{saved=JSON.parse(localStorage.getItem('lunaryWatchSaved')||'[]')}catch{};if(!saved.length)return notify('В библиотеке пока пусто');const list=saved.map((x,i)=>(i+1)+'. '+x.title+' — '+x.url).join('
-');alert('Библиотека Lunary Watch
-
-'+list)};
+$('libraryBtn').onclick=()=>{let saved=[];try{saved=JSON.parse(localStorage.getItem('lunaryWatchSaved')||'[]')}catch{};if(!saved.length)return notify('В библиотеке пока пусто');const list=saved.map((x,i)=>(i+1)+'. '+x.title+' — '+x.url).join('\\n');alert('Библиотека Lunary Watch\\n\\n'+list)};
 document.querySelectorAll('[data-accordion]').forEach(b=>b.onclick=()=>$(b.dataset.accordion).classList.toggle('hidden'));
 $('passwordToggle').onclick=()=>notify('Защита паролем появится после подключения серверной авторизации');
 $('readyToggle').onclick=()=>{const ready=$('readyToggle').getAttribute('aria-pressed')!=='true';$('readyToggle').setAttribute('aria-pressed',String(ready));$('readyToggle').textContent=ready?'Готов':'Не готов';pushNotification(ready?'Ты отметил готовность':'Ты снял отметку готовности',currentCode);notify(ready?'Отметка готовности включена':'Отметка готовности снята')};
