@@ -80,7 +80,7 @@ async function loadLunaryProfile(user){
  if(!data){
   const username=String(user.user_metadata?.username||user.email?.split('@')[0]||'Lunarian').trim().slice(0,24)||'Lunarian';
   const avatarColor=avatarColorMap[user.user_metadata?.avatar_color]?user.user_metadata.avatar_color:'green';
-  const candidate='LUN-'+crypto.randomUUID().replace(/-/g,'').slice(0,8).toUpperCase();
+  const candidate='LUN-'+(crypto.randomUUID?.()||Math.random().toString(36).slice(2)).replace(/-/g,'').slice(0,8).toUpperCase();
   const created=await sb.from('profiles').insert({id:user.id,lunary_id:candidate,username,avatar_color:avatarColor}).select(fields).single();
   if(created.error){
    const retry=await sb.from('profiles').select(fields).eq('id',user.id).maybeSingle();
@@ -202,7 +202,7 @@ $('copyInvite').onclick=()=>copy(inviteUrl());
 $('nativeShare').onclick=async()=>{const data={title:'Lunary Watch · '+roomTitle,text:'Присоединяйся к моему киновечеру!',url:inviteUrl()};if(navigator.share){try{await navigator.share(data)}catch(e){if(e.name!=='AbortError')notify('Не удалось открыть меню отправки')}}else copy(inviteUrl())};
 $('settingsBtn').onclick=()=>$('settingsPop').classList.toggle('hidden');$('closeSettings').onclick=()=>$('settingsPop').classList.add('hidden');
 $('saveSettings').onclick=async()=>{roomTitle=$('roomNameInput').value.trim()||'Киновечер';const requestedName=$('nameInput').value.trim().slice(0,24)||name||'Гость';if(authUser&&authProfile){const {data,error}=await sb.from('profiles').update({username:requestedName,updated_at:new Date().toISOString()}).eq('id',authUser.id).select('id,lunary_id,username,avatar_color').single();if(error){notify('Не удалось обновить профиль: '+error.message);return}authProfile=data;name=data.username}else{name=requestedName;safeSet('lunaryWatchName',name)}$('roomTitle').textContent=roomTitle;updateIdentityUi();$('settingsPop').classList.add('hidden');notify('Настройки сохранены')};
-$('profileBtn').onclick=()=>{const n=prompt('Как тебя показывать в комнате?',name);if(n?.trim()){name=n.trim().slice(0,24);safeSet('lunaryWatchName',name);$('profileName').textContent=name;notify('Имя обновлено')}};
+// Profile actions are wired by initAuth() to the shared Lunary ID account.
 $('mobileMenu').onclick=()=>document.querySelector('#catalog').scrollIntoView({behavior:'smooth'});
 document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x===b));$('chatPage').classList.toggle('hidden',b.dataset.tab!=='chat');$('peoplePage').classList.toggle('hidden',b.dataset.tab!=='people')});
 $('hideChatBtn').onclick=()=>{const side=document.querySelector('.side-panel');side.classList.toggle('hidden');$('hideChatBtn').textContent=side.classList.contains('hidden')?'Показать чат':'Скрыть чат'};
