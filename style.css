@@ -234,3 +234,35 @@ button.secondary,.btn.secondary,.secondary-btn{
 a{color:#8fe2a8}
 ::selection{background:#397b50;color:#fff}
 
+
+
+/* LUNARY ID ACCOUNT */
+.auth-overlay{position:fixed;inset:0;z-index:80;display:grid;place-items:center;padding:18px;background:#05070aeb;backdrop-filter:blur(14px)}
+.auth-card{position:relative;width:min(440px,100%);max-height:calc(100vh - 36px);overflow:auto;padding:30px;border:1px solid rgba(121,217,154,.24);border-radius:20px;background:linear-gradient(145deg,#19251e,#11151a 72%);box-shadow:0 28px 100px #000c;color:#f1f7f2}
+.auth-card h3{margin:12px 0 8px;font-size:25px;letter-spacing:-.7px}
+.auth-card .auth-intro{margin:0 0 20px;color:#a9b8ad;font-size:11px;line-height:1.7}
+.auth-card label{display:block;margin:14px 0;font-size:11px;color:#b8c7bc}
+.auth-card label input{display:block;width:100%;margin-top:7px;padding:13px 14px;border-radius:10px;border:1px solid rgba(130,220,160,.2);background:#090e0b;color:#f1f7f2;font:inherit;font-size:13px;outline:none}
+.auth-card label input:focus{border-color:#79d99a;box-shadow:0 0 0 3px rgba(121,217,154,.1)}
+.auth-tabs{display:grid;grid-template-columns:1fr 1fr;gap:7px;padding:4px;background:#0d120f;border-radius:11px}
+.auth-tabs button{padding:10px;border:0;border-radius:8px;background:transparent;color:#9baa9f;font:inherit;font-size:11px;cursor:pointer}
+.auth-tabs button.active{background:#23392b;color:#a8efbd}
+.auth-submit{width:100%;margin-top:8px;padding:13px}
+.auth-colors{margin:16px 0;color:#b8c7bc;font-size:11px}
+.auth-color-options{display:flex;gap:10px;margin-top:10px}
+.auth-color-options button{width:28px;height:28px;border:2px solid transparent;border-radius:50%;cursor:pointer}
+.auth-color-options button.selected{outline:2px solid #dfffe8;outline-offset:3px}
+.auth-color-options .green{background:#55c982}.auth-color-options .violet{background:#9679df}.auth-color-options .pink{background:#e17eae}.auth-color-options .orange{background:#e6a05e}
+.auth-status{min-height:18px;margin:13px 0 0;color:#a8efbd;font-size:11px;line-height:1.6}
+.auth-account{margin-top:18px}
+.auth-user{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid rgba(130,220,160,.16);border-radius:12px;background:#0c120e}
+.auth-user-avatar{display:grid;place-items:center;width:42px;height:42px;border-radius:14px;background:#55c982;color:#08130d;font-weight:800;font-size:17px}
+.auth-user b,.auth-user small{display:block}.auth-user small{margin-top:4px;color:#96a499;font-size:10px}
+.auth-id-row{display:flex;align-items:center;gap:8px;margin:15px 0;padding:12px;border:1px solid rgba(130,220,160,.16);border-radius:10px;font-size:10px}
+.auth-id-row span{color:#96a499}.auth-id-row b{margin-left:auto;color:#a8efbd;letter-spacing:.7px}
+.auth-id-row button{border:0;background:transparent;color:#a8efbd;font:inherit;cursor:pointer}
+.auth-card .close{position:absolute;right:17px;top:15px;color:#a8b6ab;font-size:24px}
+.profile{display:flex;align-items:center;gap:9px}
+#headerAvatar{display:grid;place-items:center}
+.hidden{display:none!important}
+@media(max-width:800px){.profile{display:flex!important;margin-left:auto;padding:7px 9px;min-width:38px}.profile #profileName{display:none}.profile #headerAvatar{margin:0}}
